@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LocalRoots Shop</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; text-align: center; }
+        .revenue-box { background: #e8f5e9; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block; border: 1px solid #2d5a27; }
+        .card { background: white; padding: 20px; margin: 10px auto; width: 320px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card img { width: 100%; border-radius: 5px; height: 200px; object-fit: cover; }
+        .buy-btn { background: #2d5a27; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px;}
+    </style>
+</head>
+<body>
+    <div class="revenue-box">
+        <h2 style="margin:0; color: #2d5a27;">Total Revenue: $<span id="revenue-counter">0.00</span></h2>
+    </div>
+    <div id="product-list">Loading products...</div>
+
+    <script>
+        let totalRevenue = 0;
+
+        async function loadProducts() {
+            try {
+                const response = await fetch('http://localhost:3000/get_all_products');
+                const products = await response.json();
+                document.getElementById('product-list').innerHTML = products.map(p => `
+                    <div class="card">
+                        <img src="${p.image_url}">
+                        <h3>${p.product_name}</h3>
+                        <p><strong>ID:</strong> ${p.product_id}</p>
+                        <p>Price: $${p.unit_price} per ${p.unit_type}</p>
+                        <button class="buy-btn" onclick="placeOrder('${p.product_id}', ${p.unit_price})">Buy Now</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('product-list').innerHTML = "Server connection error.";
+            }
+        }
+
+        async function placeOrder(productId, price) {
+            try {
+                const response = await fetch('http://localhost:3000/place_order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_id: productId })
+                });
+
+                if (response.ok) {
+                    alert("Order Successful for: " + productId);
+                    totalRevenue += price;
+                    document.getElementById('revenue-counter').innerText = totalRevenue.toFixed(2);
+                } else {
+                    const errorData = await response.json();
+                    alert("Order Failed: " + errorData.error);
+                }
+            } catch (error) {
+                alert("Order Failed. Please ensure 'node server.js' is running in your terminal.");
+            }
+        }
+        loadProducts();
+    </script>
+</body>
+</html>
